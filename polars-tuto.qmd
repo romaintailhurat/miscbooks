@@ -1,0 +1,239 @@
+---
+title: Prise en main de Polars
+jupyter: python3
+---
+
+`Polars` est un package `Python` permettant de manipuler les données tabulaires à partir de différents types de fichiers (CSV, Parquet, etc.). Il est une alternative directe et moderne à `Pandas`, pensée pour être très performante tout en offrant une syntaxe compréhensible à pour des _data scientists_ habitués à d'autres _frameworks_ de manipulation de données comme `dplyr`. 
+
+Ce notebook offre un complément à l'[article](https://ssphub.netlify.app/post/polars/) publié sur le blog du réseau des data scientists de la statistique publique. Les exemples sont reproductibles dans de nombreux environnements, à condition d'installer les packages comme indiqué ci-dessous. Les utilisateurs du SSP Cloud ou de Colab pourront directement ouvrir ce notebook en utilisant les boutons suivants: 
+
+<a href="https://datalab.sspcloud.fr/launcher/ide/jupyter-python?autoLaunch=true&amp;onyxia.friendlyName=%C2%ABpython-datascience%C2%BB&amp;init.personalInit=%C2%ABhttps%3A%2F%2Fraw.githubusercontent.com%2Flinogaliana%2Fpython-datascientist%2Fmaster%2Fsspcloud%2Finit-jupyter.sh%C2%BB&amp;init.personalInitArgs=%C2%ABmanipulation%2002b_pandas_TP%C2%BB&amp;security.allowlist.enabled=false" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/SSPcloud-Tester%20via%20SSP--cloud-informational&amp;color=yellow?logo=Python" alt="Onyxia"></a>
+<a href="http://colab.research.google.com/github/romaintailhurat/miscbooks/blob/main/polars-tuto.ipynb" target="_blank" rel="noopener"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+
+::: {.cell .markdown}
+```{=html}
+<div class="alert alert-danger" role="alert">
+<i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+```
+
+Outre `polars`, ce notebook utilise les packages `s3fs` et `pynsee` pour,
+respectivement, interagir avec un espace de stockage distant de type S3
+et récupérer les données d'illustration
+sur le site [insee.fr](https://www.insee.fr/fr/accueil).
+
+```{python}
+#| eval: false
+#| output: false
+!pip install polars pynsee[full] s3fs
+```
+
+
+```{=html}
+</div>
+```
+:::
+
+
+```{python}
+import os
+import polars as pl
+import s3fs
+from pynsee.download import download_file
+```
+
+# Lecture de données
+
+Les exemples fournis dans ce notebook utiliseront les données de la BPE 
+
+Pour faire le parallèle avec les
+exemples pour [découvrir le `tidyverse` dans `utilitr`](https://www.book.utilitr.org/03_fiches_thematiques/fiche_tidyverse)),
+ce _notebook_ exploite la [Base Permanente des Equipements (BPE)](https://www.insee.fr/fr/metadonnees/source/serie/s1161).
+
+
+A partir d'un csv, il est possible de créer un `DataFrame` `Polars` de plusieurs manières :
+
+1. Charger les données via `Pandas` puis les transformer en objet `Polars`
+2. Charger les données directement avec `Polars` via une fonction `read_csv` qui fonctionne, en apparence,
+de la même manière que celle de `Pandas`
+
+# A partir d'un objet `Pandas`
+
+Pour cette démonstration, on va créer le `DataFrame` `Pandas` via `Pynsee` qui fonctionne en 
+deux temps:
+
+1. Récupération des données depuis le site [insee.fr](https://www.insee.fr/fr/accueil)
+2. Import sous forme de `DataFrame` `Pandas` avec un typage pré-défini dans le _package_, adapté
+à la source
+
+::: {.cell .markdown}
+```{=html}
+<div class="alert alert-danger" role="alert">
+<i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+```
+Ces deux étapes sont là pour éviter le téléchargement manuel du CSV. Elles pourraient être
+remplacées par un `pd.read_csv` vers un URL bien choisi. Cependant le typage des données pourrait ne pas être
+optimal. 
+
+```{=html}
+</div>
+```
+:::
+
+Ensuite intervient la
+méthode `from_pandas`:
+
+```{python}
+pandas_df_bpe = download_file("BPE_ENS") # pynsee renvoie un dataframe pandas
+df = pl.from_pandas(pandas_df_bpe)
+```
+
+Les `DataFrame` `Polars` apparaissent de manière différente des `DataFrame` `Pandas`
+dans la console ou dans le _display_ de `Jupyter`. 
+
+```{python}
+df.head(5)
+```
+
+On va écrire en parquet ce `DataFrame` pour ensuite illustrer la lecture à partir de
+ce format, plus performant. 
+
+```{python}
+df.write_parquet("bpe.parquet")
+```
+
+
+## En lecture directe depuis un CSV
+
+Pour les utilisateurs du SSP Cloud, il est possible de
+directement lire depuis un CSV en passant par l'espace
+de stockage de la plateforme:
+
+```{python}
+S3_ENDPOINT_URL = "https://" + os.environ["AWS_S3_ENDPOINT"]
+fs = s3fs.S3FileSystem(client_kwargs={'endpoint_url': S3_ENDPOINT_URL})
+BUCKET = "donnees-insee/diffusion/BPE/2019"
+
+with fs.open(f"{BUCKET}/BPE_ENS.csv") as bpe_csv:
+    df_bpe = pl.read_csv(
+        bpe_csv, sep = ";",
+        dtypes={
+            "DEP": pl.Categorical,
+            "DEPCOM": pl.Categorical
+            })
+    print(df_bpe.head())
+```
+
+# Comment utiliser Polars ?
+
+Dans la suite de ce tutoriel, on va privilégier l'import
+depuis un fichier `parquet`, plus performant et plus fiable
+grâce au typage des colonnes. 
+
+```{python}
+df_bpe = pl.read_parquet("bpe.parquet")
+```
+
+A l'instar d'autres outils modernes d'exploitation des données,
+`Polars` expose un modèle de traitement basé sur des fonctions de haut niveau, comme `select`, `filter` ou `groupby`, qui empruntent au langage SQL une logique expressive du _"quoi ?"_ plutôt que du _"comment ?"_.
+
+Dans l'exemple qui suit, on commence par déclarer une exécution retardée (via `lazy()`) qui va permettre au moteur sous-jacent d'optimiser le traitement complet.
+Puis on exprime à l'aide des fonctions de haut niveau ce que l'on veut faire :
+
+1. filtrer le jeu de données pour ne garder les lignes pour lesquelles la colonne `TYPEQU` vaut `B316` (les stations-services)
+2. on regroupe au niveau département
+3. on compte le nombre d'occurrences pour chaque département via `agg`
+4. le dernier appel - `collect()` - indique que le traitement peut être lancé (et donc optimisé et parallelisé par `Polars`).
+
+```{python}
+df_stations_service = df_bpe.lazy().filter( # 1.
+    pl.col("TYPEQU") == "B316"
+).groupby( # 2.
+    "DEP"
+).agg( # 3.
+    pl.count().alias("NB_STATION_SERVICE")
+).collect() # 4.
+
+df_stations_service.head(5)
+```
+
+## Sélection de données
+
+Deux types de sélections sont possibles :
+
+1. une sélection de variables (en colonne), avec `select`
+2. une sélection d'observations (en ligne), avec `filter`
+
+La combinaison des deux se faisant en chaînant l'appel à ces deux fonctions.
+
+### Sélection de variables
+
+Commençons par sélectionner des variables en utilisant leurs noms :
+
+```{python}
+df_bpe.select(
+    ["DEPCOM", "TYPEQU", "NB_EQUIP"]
+).head(5)
+```
+
+Bien que cette méthode ne soit pas conseillée, 
+il est bon de noter qu'il est également possible de sélectionner via les positions des colonnes, comme le permet
+`Pandas` :
+
+```{python}
+df_bpe[:, 1:5].head(5)
+```
+
+On peut également s'appuyer sur des motifs de sélection des noms de colonnes mobilisant des expressions régulières (ici `^DEP.*$` signifiant _"débute par DEP"_):
+
+```{python}
+df_bpe.select(
+    pl.col("^DEP.*$")
+).head(5)
+```
+
+
+La fonction `select` acceptant des `list` Python, on peut construire des sélecteurs assez puissants :
+
+```{python}
+dep_cols = [cols for cols in df_bpe.columns if cols.startswith("DEP")] 
+
+df_bpe.select(dep_cols).head(5)
+```
+
+### Sélection d'observation
+
+TODO
+
+## Renommage de variables
+
+La fonction `rename` permet de lister les colonnes à renommer via un dictionnaire Python :
+
+```{python}
+#| tags: []
+df_bpe.rename({
+    "DEPCOM" : "code_commune"
+}).head(5)
+```
+
+::: {.cell .markdown}
+```{=html}
+<div class="alert alert-info" role="alert">
+<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+```
+
+Petit piège,
+la logique est l'inverse de celle de `dplyr` : le dictionnaire est sous la forme `{"ancienne_colonne": "nouvelle_colonne"}`
+
+```{=html}
+</div>
+```
+:::
+
+Comme vu plus haut, construire des expressions de renommage plus complexes pourra se faire en pur Python :
+
+```{python}
+cols_minuscules = {cols: cols.lower() for cols in df_bpe.columns}
+
+df_bpe.rename(cols_minuscules).head(5)
+```
+
