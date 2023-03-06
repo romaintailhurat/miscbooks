@@ -156,6 +156,15 @@ df_stations_service = df_bpe.lazy().filter( # 1.
 df_stations_service.head(5)
 ```
 
+## Lazy or not lazy ?
+
+Les exemples qui suivent n'utilisent pas systématiquement la fonction `lazy()` avant les opérations sur le data frame pour montrer l'alternative qui s'offre à l'utilisateur de Polars. Cependant, l'usage de cette fonction est recommandée en général et en particulier pour des traiements sur des tables volumineuses : en effet, le mode _lazy_ permet au moteur sous-jacent d'optimiser les traitements et donc de gagner en rapidité (par exemple en parallélisant les calculs).
+
+## Les expressions
+
+...
+
+
 ## Sélection de données
 
 Deux types de sélections sont possibles :
@@ -200,10 +209,6 @@ dep_cols = [cols for cols in df_bpe.columns if cols.startswith("DEP")]
 df_bpe.select(dep_cols).head(5)
 ```
 
-### Sélection d'observation
-
-TODO
-
 ## Renommage de variables
 
 La fonction `rename` permet de lister les colonnes à renommer via un dictionnaire Python :
@@ -237,3 +242,64 @@ cols_minuscules = {cols: cols.lower() for cols in df_bpe.columns}
 df_bpe.rename(cols_minuscules).head(5)
 ```
 
+### Sélection d'observations
+
+La sélection d'observations (de lignes) se fera grâce à la fonction `filter`.
+
+```{python}
+df_bpe.filter(
+    (pl.col("DEPCOM") == "75101") &
+    (pl.col("TYPEQU") == "B304")
+).head(5)
+```
+
+De nombreux opérateurs sont disponibles pour faciliter cette sélection d'observations.
+
+```{python}
+# Départements 75 ou 92
+df_bpe.filter(
+    pl.col("DEP").is_in(["75", "92"])
+).head(5)
+```
+
+
+```{python}
+# Valeurs manquantes pour la variable EPCI
+df_bpe.filter(
+    pl.col("EPCI").is_null()
+)
+```
+
+## Trier une table
+
+La fonction `sort` permet de trier la table sur une ou plusieurs variables.
+
+```{python}
+df_bpe.lazy()\
+    .sort("DEPCOM", "TYPEQU")\
+    .head(5).collect()
+```
+
+L'ordre de tri - croissant par défaut - peut-être précisé pour chaque variable.
+
+
+```{python}
+df_bpe.lazy()\
+    .sort("DEPCOM", "TYPEQU", descending=[True, False])\
+    .head(5).collect()
+```
+
+
+## Créer de nouvelles variables
+
+La création de nouvelles variables se fera via `with_columns`. Dans l'exemple qui suit :
+- on convertit en entier numérique la variable NB_EQUIP
+- on calcule la somme cumulée (avec `cumsum`)
+- on nomme la nouvelle colonne ``
+
+```{python}
+df_bpe.lazy()\
+    .with_columns(
+        pl.col("NB_EQUIP").str.parse_int(radix=10).cumsum().alias("NB_EQUIP_SUM")
+    ).head(5).collect()
+```
