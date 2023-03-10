@@ -10,16 +10,38 @@ Ce notebook offre un complément à l'[article](https://ssphub.netlify.app/post/
 <a href="https://datalab.sspcloud.fr/launcher/ide/jupyter-python?autoLaunch=true&amp;onyxia.friendlyName=%C2%ABpython-datascience%C2%BB&amp;init.personalInit=%C2%ABhttps%3A%2F%2Fraw.githubusercontent.com%2Flinogaliana%2Fpython-datascientist%2Fmaster%2Fsspcloud%2Finit-jupyter.sh%C2%BB&amp;init.personalInitArgs=%C2%ABmanipulation%2002b_pandas_TP%C2%BB&amp;security.allowlist.enabled=false" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/SSPcloud-Tester%20via%20SSP--cloud-informational&amp;color=yellow?logo=Python" alt="Onyxia"></a>
 <a href="http://colab.research.google.com/github/romaintailhurat/miscbooks/blob/main/polars-tuto.ipynb" target="_blank" rel="noopener"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
 
+Les exemples fournis dans ce notebook utiliseront les données de la
+[base permanente des équipements (BPE)](https://www.insee.fr/fr/metadonnees/source/serie/s1161). 
+
+Pour faire le parallèle avec les
+exemples pour [découvrir le `tidyverse` dans `utilitr`](https://www.book.utilitr.org/03_fiches_thematiques/fiche_tidyverse)),
+ce _notebook_ exploite la [Base Permanente des Equipements (BPE)](https://www.insee.fr/fr/metadonnees/source/serie/s1161).
+
+
+```{python}
+import os
+import polars as pl
+import s3fs
+from pynsee.download import download_file
+```
+
 ::: {.cell .markdown}
 ```{=html}
 <div class="alert alert-danger" role="alert">
 <i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
 ```
 
-Outre `polars`, ce notebook utilise les packages `s3fs` et `pynsee` pour,
-respectivement, interagir avec un espace de stockage distant de type S3
+Outre `Polars`, ce notebook propose des compléments qui utilisent
+les packages [`s3fs`](https://s3fs.readthedocs.io/en/latest/)
+et [`Pynsee`](https://github.com/InseeFrLab/pynsee) pour,
+respectivement, interagir avec un espace de stockage distant de type `S3`
 et récupérer les données d'illustration
 sur le site [insee.fr](https://www.insee.fr/fr/accueil).
+`Pynsee` est nécessaire en début de _notebook_ pour faciliter la récupération
+de la source de données utilisée. `s3fs` n'est nécessaire
+que pour faire tourner les exemples
+présents dans les encadrés proposant des détails supplémentaires ou 
+alternatifs.
 
 ```{python}
 #| eval: false
@@ -34,20 +56,7 @@ sur le site [insee.fr](https://www.insee.fr/fr/accueil).
 :::
 
 
-```{python}
-import os
-import polars as pl
-import s3fs
-from pynsee.download import download_file
-```
-
 # Lecture de données
-
-Les exemples fournis dans ce notebook utiliseront les données de la BPE 
-
-Pour faire le parallèle avec les
-exemples pour [découvrir le `tidyverse` dans `utilitr`](https://www.book.utilitr.org/03_fiches_thematiques/fiche_tidyverse)),
-ce _notebook_ exploite la [Base Permanente des Equipements (BPE)](https://www.insee.fr/fr/metadonnees/source/serie/s1161).
 
 
 A partir d'un csv, il est possible de créer un `DataFrame` `Polars` de plusieurs manières :
@@ -56,20 +65,38 @@ A partir d'un csv, il est possible de créer un `DataFrame` `Polars` de plusieur
 2. Charger les données directement avec `Polars` via une fonction `read_csv` qui fonctionne, en apparence,
 de la même manière que celle de `Pandas`
 
-# A partir d'un objet `Pandas`
+Ces deux approches sont présentées dans les prochaines parties. 
 
-Pour cette démonstration, on va créer le `DataFrame` `Pandas` via `Pynsee` qui fonctionne en 
-deux temps:
+## A partir d'un objet `Pandas`
 
-1. Récupération des données depuis le site [insee.fr](https://www.insee.fr/fr/accueil)
+Le _package_ `Pynsee` fonctionne en deux temps pour créer un `DataFrame` `Pandas` à partir
+des données disponibles sur le site [insee.fr](https://www.insee.fr/fr/accueil) :
+
+1. Récupération des données depuis le site [insee.fr](https://www.insee.fr/fr/accueil) à partir
+des paramètres de la fonction `download_file` (source, année...)
 2. Import sous forme de `DataFrame` `Pandas` avec un typage pré-défini dans le _package_, adapté
 à la source
+
+Pour récupérer des données via `Pynsee`, la fonction de référence est `download_file`:
+
+```{python}
+#| output: false
+pandas_df_bpe = download_file("BPE_ENS")
+```
+
+`Pynsee` renvoie un `DataFrame` `Pandas` correspondant à la source désiré :
+
+```{python}
+pandas_df_bpe.__class__
+```
+
 
 ::: {.cell .markdown}
 ```{=html}
 <div class="alert alert-danger" role="alert">
 <i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
 ```
+
 Ces deux étapes sont là pour éviter le téléchargement manuel du CSV. Elles pourraient être
 remplacées par un `pd.read_csv` vers un URL bien choisi. Cependant le typage des données pourrait ne pas être
 optimal. 
@@ -79,22 +106,30 @@ optimal.
 ```
 :::
 
-Ensuite intervient la
+La conversion d'un objet `Pandas` en `Polars` se fait via la
 méthode `from_pandas`:
 
 ```{python}
-pandas_df_bpe = download_file("BPE_ENS") # pynsee renvoie un dataframe pandas
 df = pl.from_pandas(pandas_df_bpe)
 ```
 
 Les `DataFrame` `Polars` apparaissent de manière différente des `DataFrame` `Pandas`
-dans la console ou dans le _display_ de `Jupyter`. 
+dans la console ou dans le _display_ de `Jupyter`:
+
+- `pd.DataFrame`:
 
 ```{python}
-df.head(5)
+pandas_df_bpe.head(2)
 ```
 
-On va écrire en parquet ce `DataFrame` pour ensuite illustrer la lecture à partir de
+- `pl.DataFrame`:
+
+```{python}
+df.head(2)
+```
+
+On va écrire au format [Parquet](https://pythonds.linogaliana.fr/reads3/) ce `DataFrame` pour
+ensuite illustrer la lecture à partir de
 ce format, plus performant. 
 
 ```{python}
@@ -104,7 +139,40 @@ df.write_parquet("bpe.parquet")
 
 ## En lecture directe depuis un CSV
 
-Pour les utilisateurs du SSP Cloud, il est possible de
+Pour faciliter l'usage des données de la [Base Permanente des Equipements (BPE)](https://www.insee.fr/fr/metadonnees/source/serie/s1161),
+une copie de la version 2019 disponible sur le site de l'Insee est mise à disposition,
+prête à l'emploi. Elle est disponible depuis
+l'URL : https://minio.lab.sspcloud.fr/donnees-insee/diffusion/BPE/2019/BPE_ENS.csv
+
+
+```{python}
+url = "https://minio.lab.sspcloud.fr/donnees-insee/diffusion/BPE/2019/BPE_ENS.csv"
+df_bpe = pl.read_csv(
+    url, sep = ";",
+    dtypes={
+        "DEP": pl.Categorical,
+        "DEPCOM": pl.Categorical
+    })
+```
+
+L'option `dtypes` est ici nécessaire sous peine d'une erreur qu'on ne rencontrait pas
+avec `Pandas` car `Polars` est plus vigilant sur la nature piégeuse de certaines
+variables comme les numéros de départements français (qui sont tous numériques
+sauf les numéros Corse _"2A"_ et _"2B"_) et demande à l'utilisateur de données
+de fixer le type de ces variables. 
+
+::: {.cell .markdown}
+```{=html}
+<div class="alert alert-info" role="alert">
+<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+```
+
+Pour les utilisateurs du [SSP Cloud](https://www.sspcloud.fr/),
+il existe une méthode plus universelle pour récupérer des données
+disponibles depuis le système de stockage.
+La librairie `S3FS` permet de traiter le système de stockage S3
+comme un _filesystem_ (FS) local. 
+Il est donc possible de
 directement lire depuis un CSV en passant par l'espace
 de stockage de la plateforme:
 
@@ -123,10 +191,16 @@ with fs.open(f"{BUCKET}/BPE_ENS.csv") as bpe_csv:
     print(df_bpe.head())
 ```
 
+```{=html}
+</div>
+```
+:::
+
+
 # Comment utiliser Polars ?
 
 Dans la suite de ce tutoriel, on va privilégier l'import
-depuis un fichier `parquet`, plus performant et plus fiable
+depuis un fichier `Parquet`, plus performant et plus fiable
 grâce au typage des colonnes. 
 
 ```{python}
@@ -134,15 +208,23 @@ df_bpe = pl.read_parquet("bpe.parquet")
 ```
 
 A l'instar d'autres outils modernes d'exploitation des données,
-`Polars` expose un modèle de traitement basé sur des fonctions de haut niveau, comme `select`, `filter` ou `groupby`, qui empruntent au langage SQL une logique expressive du _"quoi ?"_ plutôt que du _"comment ?"_.
+`Polars` expose un modèle de traitement basé sur des fonctions de haut niveau,
+comme `select`, `filter` ou `groupby`, qui empruntent au langage SQL
+une logique expressive du _"quoi ?"_ plutôt que du _"comment ?"_.
 
-Dans l'exemple qui suit, on commence par déclarer une exécution retardée (via `lazy()`) qui va permettre au moteur sous-jacent d'optimiser le traitement complet.
+La différence avec un package comme `Pandas` ou `dplyr` (`R`) est que `Polars`
+repose explicitement sur le principe de l'exécution retardée (_lazy evaluation_)
+qui consiste à optimiser le plan d'exécution fourni par l'utilisateur de données
+pour gagner en performance. 
+
+Dans l'exemple qui suit, on commence par déclarer une exécution retardée (via `lazy()`)
+qui va permettre au moteur sous-jacent d'optimiser le traitement complet.
 Puis on exprime à l'aide des fonctions de haut niveau ce que l'on veut faire :
 
-1. filtrer le jeu de données pour ne garder les lignes pour lesquelles la colonne `TYPEQU` vaut `B316` (les stations-services)
-2. on regroupe au niveau département
-3. on compte le nombre d'occurrences pour chaque département via `agg`
-4. le dernier appel - `collect()` - indique que le traitement peut être lancé (et donc optimisé et parallelisé par `Polars`).
+1. Filtrer le jeu de données pour ne garder les lignes pour lesquelles la colonne `TYPEQU` vaut `B316` (les stations-services)
+2. On regroupe au niveau département
+3. On compte le nombre d'occurrences pour chaque département via `agg`
+4. Le dernier appel - `collect()` - indique que le traitement peut être lancé (et donc optimisé et parallelisé par `Polars`).
 
 ```{python}
 df_stations_service = df_bpe.lazy().filter( # 1.
@@ -156,25 +238,69 @@ df_stations_service = df_bpe.lazy().filter( # 1.
 df_stations_service.head(5)
 ```
 
+Du point de vue du code,
+la complexité induite par l'approche d'évaluation retardée est donc 
+légère (un `lazy` en début de plan et un `collect` en fin de plan). 
+Cependant, du point de vue de la performance, cela va amener énormément
+de gain car cela permettra à `Polars` d'optimiser l'ordre des opérations
+lorsque cela est possible pour gagner en performance. Par exemple, si une étape
+comme `filter` arrive tardivement, `Polars` peut être tenté de la faire intervenir
+plus tôt que l'étape à laquelle elle a été déclarée si c'est possible
+puisque traiter un _dataframe_ allégé peut faire gagner beaucoup de temps. 
+
+
 ## Lazy or not lazy ?
 
-Les exemples qui suivent n'utilisent pas systématiquement la fonction `lazy()` avant les opérations sur le data frame pour montrer l'alternative qui s'offre à l'utilisateur de Polars. Cependant, l'usage de cette fonction est recommandée en général et en particulier pour des traiements sur des tables volumineuses : en effet, le mode _lazy_ permet au moteur sous-jacent d'optimiser les traitements et donc de gagner en rapidité (par exemple en parallélisant les calculs).
+Les exemples qui suivent n'utilisent pas systématiquement la fonction `lazy()`
+avant les opérations sur le _dataframe_ pour montrer l'alternative qui s'offre à l'utilisateur de `Polars`.
+
+Cependant, l'usage de cette fonction est recommandée en général
+et en particulier pour des traiements sur des tables volumineuses :
+en effet, le mode _lazy_ permet au moteur sous-jacent d'optimiser les traitements
+et donc de gagner en rapidité (par exemple en parallélisant les calculs).
 
 ## Les expressions
 
-...
+Les [**expressions**](https://pola-rs.github.io/polars-book/user-guide/dsl/expressions.html) sont au coeur des transformations de données en `Polars`. A partir de l'exemple ci-dessous, on peut comprendre la nature d'une expression :
 
+```
+pl.col("A").sort().head(2)
+```
 
-## Sélection de données
+- `pl` est l'alias pour le module `Polars` ;
+- `col("A")` pointe vers la colonne _"A"_ ;
+- `sort()` est une fonction de tri à appliquer sur la colonne ;
+- l'opération `head` va permettre de matérialiser l'expression, ici pour sélectionner les deux premières lignes
+
+Ici, nous avons utilisé `head` pour matérialiser l'expression. 
+Le reste de l'expression (les transformations antérieures) sera exécuté lorsqu'une action comme `head` est à mettre en oeuvre. 
+
+Les actions qui déclenchent des opérations sont les suivantes:
+
+- l'aggrégation (`df.groupby(..).agg(..)`)
+- l'affichage de valeurs (`df.head(...)`)
+- l'appel explicite à une exécution (`df.collect()`)
+
+Alors que les transformations suivantes ne génèrent pas d'exécution
+immédiate : 
+
+- la sélection d'observations (`df.filter(..)`)
+- la création de nouvelles variables (`df.with_columns(..)`) ou la sélection
+de colonnes (`df.select(...)`)
+
+Au contraire, leur exécution est retardée à une exécution
+ultérieure. 
+
+# Sélection de données
 
 Deux types de sélections sont possibles :
 
-1. une sélection de variables (en colonne), avec `select`
-2. une sélection d'observations (en ligne), avec `filter`
+1. une __sélection de variables__ (en colonne), avec `select`
+2. une __sélection d'observations__ (en ligne), avec `filter`
 
 La combinaison des deux se faisant en chaînant l'appel à ces deux fonctions.
 
-### Sélection de variables
+## Sélection de variables
 
 Commençons par sélectionner des variables en utilisant leurs noms :
 
@@ -192,14 +318,14 @@ il est bon de noter qu'il est également possible de sélectionner via les posit
 df_bpe[:, 1:5].head(5)
 ```
 
-On peut également s'appuyer sur des motifs de sélection des noms de colonnes mobilisant des expressions régulières (ici `^DEP.*$` signifiant _"débute par DEP"_):
+On peut également s'appuyer sur des motifs de sélection des noms de colonnes
+mobilisant des expressions régulières (ici `^DEP.*$` signifiant _"débute par DEP"_):
 
 ```{python}
 df_bpe.select(
     pl.col("^DEP.*$")
 ).head(5)
 ```
-
 
 La fonction `select` acceptant des `list` Python, on peut construire des sélecteurs assez puissants :
 
@@ -208,6 +334,54 @@ dep_cols = [cols for cols in df_bpe.columns if cols.startswith("DEP")]
 
 df_bpe.select(dep_cols).head(5)
 ```
+
+## Sélection d'observations
+
+La sélection d'observations (de lignes) se fera grâce à la fonction `filter`.
+
+```{python}
+df_bpe.filter(
+    (pl.col("DEPCOM") == "75101") &
+    (pl.col("TYPEQU") == "B304")
+).head(5)
+```
+
+
+De nombreux opérateurs sont disponibles pour faciliter cette sélection d'observations. Ici, deux exemples :
+
+- `is_in` qui permet de filtrer sur un ensemble de valeurs ; 
+- `is_null` pour trouver les données manquantes de la variable _"EPCI"_.
+
+Par exemple, pour sélectionner les départements 75 et 92:
+
+```{python}
+# Départements 75 ou 92
+df_bpe.filter(
+    pl.col("DEP").is_in(["75", "92"])
+).head(5)
+```
+
+Pour sélectionner les observations où la variable EPCI a une valeur manquante:
+
+```{python}
+# Valeurs manquantes pour la variable EPCI
+df_bpe.filter(
+    pl.col("EPCI").is_null()
+)
+```
+
+A l'inverse, si on désire ne sélectionner que les 
+observations où la colonne _"EPCI"_ n'est pas manquante :
+
+```{python}
+df_bpe.filter(
+    pl.col("EPCI").is_not_null()
+)
+```
+
+Comme avec `Pandas`, il existe énormément de méthodes
+pratiques pour la manipulation de données
+
 
 ## Renommage de variables
 
@@ -234,7 +408,7 @@ la logique est l'inverse de celle de `dplyr` : le dictionnaire est sous la forme
 ```
 :::
 
-Comme vu plus haut, construire des expressions de renommage plus complexes pourra se faire en pur Python :
+Comme vu plus haut, construire des expressions de renommage plus complexes pourra se faire en pur `Python` :
 
 ```{python}
 cols_minuscules = {cols: cols.lower() for cols in df_bpe.columns}
@@ -242,33 +416,7 @@ cols_minuscules = {cols: cols.lower() for cols in df_bpe.columns}
 df_bpe.rename(cols_minuscules).head(5)
 ```
 
-### Sélection d'observations
 
-La sélection d'observations (de lignes) se fera grâce à la fonction `filter`.
-
-```{python}
-df_bpe.filter(
-    (pl.col("DEPCOM") == "75101") &
-    (pl.col("TYPEQU") == "B304")
-).head(5)
-```
-
-De nombreux opérateurs sont disponibles pour faciliter cette sélection d'observations.
-
-```{python}
-# Départements 75 ou 92
-df_bpe.filter(
-    pl.col("DEP").is_in(["75", "92"])
-).head(5)
-```
-
-
-```{python}
-# Valeurs manquantes pour la variable EPCI
-df_bpe.filter(
-    pl.col("EPCI").is_null()
-)
-```
 
 ## Trier une table
 
@@ -290,16 +438,87 @@ df_bpe.lazy()\
 ```
 
 
-## Créer de nouvelles variables
+## Création de nouvelles variables
 
 La création de nouvelles variables se fera via `with_columns`. Dans l'exemple qui suit :
-- on convertit en entier numérique la variable NB_EQUIP
+
+- on convertit en entier numérique la variable `NB_EQUIP`
 - on calcule la somme cumulée (avec `cumsum`)
-- on nomme la nouvelle colonne ``
+- on nomme la nouvelle colonne `NB_EQUIP_SUM`
 
 ```{python}
 df_bpe.lazy()\
+    .with_columns(pl.col('NB_EQUIP').cast(pl.Int64, strict=False))\
     .with_columns(
-        pl.col("NB_EQUIP").str.parse_int(radix=10).cumsum().alias("NB_EQUIP_SUM")
+        pl.col("NB_EQUIP").cumsum().alias("NB_EQUIP_SUM"),
+        pl.when(pl.col("NB_EQUIP") > 3).then(True).otherwise(False).alias("NB_EQUIP_3PLUS")
     ).head(5).collect()
 ```
+
+
+## Production de synthèses et d'agrégats
+
+On peut produire des statistiques synthétiques sur notre jeu de données
+avec la fonction `select`.
+
+```{python}
+df_bpe.lazy()\
+    .with_columns(pl.col('NB_EQUIP').cast(pl.Int64, strict=False))\
+    .select(
+        pl.col("NB_EQUIP").sum().alias("NB_EQUIP_TOT")
+    ).head(5).collect()
+```
+
+Les fonctions `describe` et `glimpse` proposent un aperçu synthétique de la table:
+
+```{python}
+df_bpe.describe()
+```
+
+```{python}
+df_bpe.glimpse()
+```
+
+Les fonctions `groupby` et `agg` sont mobilisées pour créer des aggrégats. Dans l'exemple ci-dessous :
+
+1. On précise que l'on veut grouper au niveau départemental (`groupby("DEP")`) ;
+2. On somme les occurences d'équipement de type boulangerie (`pl.col("TYPEQU") == "B203").sum()`) ;
+3. On donne un nom à la colonne portant la somme (`alias("NB_BOULANGERIES_TOT")`)
+
+
+```{python}
+df_bpe.lazy().groupby("DEP").agg(
+    (pl.col("TYPEQU") == "B203").sum().alias("NB_BOULANGERIES_TOT")
+).sort("NB_BOULANGERIES_TOT", descending=True).head(5).collect()
+```
+
+# Explorer le plan d'exécution
+
+Il peut être utile pour comprendre les opérations effectuées par `Polars`
+de jeter un oeil au plan d'exécution. 
+
+Pour cela, il suffit pour cela de ne pas effectuer
+d'action comme `collect` ou `head`. 
+
+```{python}
+df_bpe.lazy()\
+    .with_columns(pl.col('NB_EQUIP').cast(pl.Int64, strict=False))\
+    .select(
+        pl.col("NB_EQUIP").sum().alias("NB_EQUIP_TOT")
+    )
+```
+
+::: {.cell .markdown}
+```{=html}
+<div class="alert alert-info" role="alert">
+<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+```
+
+L'opération d'affichage du plan est ici instantanée puisqu'aucune
+action n'a été effectuée, seulement des transformations dont 
+l'activation est retardée en attente d'une action n'ayant pas lieu. 
+
+```{=html}
+</div>
+```
+:::
