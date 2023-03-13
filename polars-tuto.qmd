@@ -81,7 +81,7 @@ Pour récupérer des données via `Pynsee`, la fonction de référence est `down
 
 ```{python}
 #| output: false
-pandas_df_bpe = download_file("BPE_ENS")
+pandas_df_bpe = download_file("BPE_ENS", update = True)
 ```
 
 `Pynsee` renvoie un `DataFrame` `Pandas` correspondant à la source désiré :
@@ -163,8 +163,8 @@ de fixer le type de ces variables.
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-info" role="alert">
-<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
 ```
 
 Pour les utilisateurs du [SSP Cloud](https://www.sspcloud.fr/),
