@@ -27,8 +27,8 @@ from pynsee.download import download_file
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-danger" role="alert">
-<i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+<div class="alert alert-danger" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left: .2rem solid #ff0039;">
+<h3 class="alert-heading"><i class="fa fa-exclamation-triangle"></i> Warning</h3>
 ```
 
 Outre `Polars`, ce notebook propose des compléments qui utilisent
@@ -93,8 +93,8 @@ pandas_df_bpe.__class__
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-danger" role="alert">
-<i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+<div class="alert alert-danger" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left: .2rem solid #ff0039;">
+<h3 class="alert-heading"><i class="fa fa-exclamation-triangle"></i> Warning</h3>
 ```
 
 Ces deux étapes sont là pour éviter le téléchargement manuel du CSV. Elles pourraient être
@@ -396,8 +396,8 @@ df_bpe.rename({
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-info" role="alert">
-<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
 ```
 
 Petit piège,
@@ -510,8 +510,8 @@ df_bpe.lazy()\
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-info" role="alert">
-<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
 ```
 
 L'opération d'affichage du plan est ici instantanée puisqu'aucune
