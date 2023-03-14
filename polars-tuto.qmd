@@ -27,8 +27,8 @@ from pynsee.download import download_file
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-danger" role="alert">
-<i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+<div class="alert alert-danger" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left: .2rem solid #ff0039;">
+<h3 class="alert-heading"><i class="fa fa-exclamation-triangle"></i> Warning</h3>
 ```
 
 Outre `Polars`, ce notebook propose des compléments qui utilisent
@@ -41,19 +41,25 @@ sur le site [insee.fr](https://www.insee.fr/fr/accueil).
 de la source de données utilisée. `s3fs` n'est nécessaire
 que pour faire tourner les exemples
 présents dans les encadrés proposant des détails supplémentaires ou 
-alternatifs.
-
-```{python}
-#| eval: false
-#| output: false
-!pip install polars pynsee[full] s3fs
-```
-
+alternatifs. La dernière partie
+utilise également le package [`DuckDB`](https://duckdb.org/docs/api/python/overview.html)
+pour illustrer la complémentarité avec une approche utilisant des requêtes SQL
+pour la manipulation de données. 
 
 ```{=html}
 </div>
 ```
 :::
+
+Pour pouvoir installer les packages utilisés par ce tutoriel, 
+il est nécessaire d'exécuter la cellule suivante:
+
+```{python}
+#| eval: false
+#| output: false
+!pip install polars pynsee[full] s3fs duckdb
+```
+
 
 
 # Lecture de données
@@ -81,7 +87,7 @@ Pour récupérer des données via `Pynsee`, la fonction de référence est `down
 
 ```{python}
 #| output: false
-pandas_df_bpe = download_file("BPE_ENS")
+pandas_df_bpe = download_file("BPE_ENS", update = True)
 ```
 
 `Pynsee` renvoie un `DataFrame` `Pandas` correspondant à la source désiré :
@@ -93,8 +99,8 @@ pandas_df_bpe.__class__
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-danger" role="alert">
-<i class="fa-solid fa-triangle-exclamation"></i> Warning</h3>
+<div class="alert alert-danger" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left: .2rem solid #ff0039;">
+<h3 class="alert-heading"><i class="fa fa-exclamation-triangle"></i> Warning</h3>
 ```
 
 Ces deux étapes sont là pour éviter le téléchargement manuel du CSV. Elles pourraient être
@@ -163,8 +169,8 @@ de fixer le type de ces variables.
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-info" role="alert">
-<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
 ```
 
 Pour les utilisateurs du [SSP Cloud](https://www.sspcloud.fr/),
@@ -396,8 +402,8 @@ df_bpe.rename({
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-info" role="alert">
-<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
 ```
 
 Petit piège,
@@ -510,8 +516,8 @@ df_bpe.lazy()\
 
 ::: {.cell .markdown}
 ```{=html}
-<div class="alert alert-info" role="alert">
-<h3 class="alert-heading"><i class="fa-solid fa-comment"></i> Note</h3>
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
 ```
 
 L'opération d'affichage du plan est ici instantanée puisqu'aucune
@@ -522,3 +528,69 @@ l'activation est retardée en attente d'une action n'ayant pas lieu.
 </div>
 ```
 :::
+
+# Une interconnexion avec `DuckDB` pour faire des requêtes SQL
+
+`Polars` s'appuie
+sur [`Apache Arrow`](https://arrow.apache.org/), un écosystème
+pour lire des données (CSV ou Parquet) de manière très efficace 
+et les stocker dans des objets peu volumineux pour gagner en performance. 
+C'est également le cas d'une autre librairie intéressante pour le traitement
+de données: [`DuckDB`](https://duckdb.org/). 
+
+Plutôt que concurrentes, ces deux librairies sont très complémentaires. 
+Il est possible d'effectuer des
+requêtes SQL depuis un `DataFrame` `Polars` via `DuckDB` ou d'utiliser 
+`DuckDB` pour lire les données et convertir celles-ci en `DataFrame Polars`
+à l'issue des requêtes. Ces deux approches sont intéressantes pour les 
+personnes familières avec le langage SQL.
+
+Pour illustrer le premier cas, reprenons un exemple précédent qui illustrait
+la sélection d'observations en se restreignant au choix de deux départements:
+
+```{python}
+df_bpe.filter(
+    pl.col("DEP").is_in(["75", "92"])
+).head(5)
+```
+
+Avec `DuckDB`, pour effectuer la même opération, nommée _filtre_ en SQL,
+une requête SQL s'écrira de la manière suivante:
+
+```{python}
+import duckdb 
+
+df_duckdb = duckdb.sql('SELECT * FROM df_bpe WHERE DEP in (75, 92)')
+df_duckdb
+```
+
+::: {.cell .markdown}
+```{=html}
+<div class="alert alert-info" role="alert" style="color: rgba(0,0,0,.8); background-color: white; margin-top: 1em; margin-bottom: 1em; margin:1.5625emauto; padding:0 .6rem .8rem!important;overflow:hidden; page-break-inside:avoid; border-radius:.25rem; box-shadow:0 .2rem .5rem rgba(0,0,0,.05),0 0 .05rem rgba(0,0,0,.1); transition:color .25s,background-color .25s,border-color .25s ; border-right: 1px solid #dee2e6 ; border-top: 1px solid #dee2e6 ; border-bottom: 1px solid #dee2e6 ; border-left:.2rem solid #007bff80;">
+<h3 class="alert-heading"><i class="fa fa-comment"></i> Note</h3>
+```
+
+`df_duckdb` n'est plus un objet `Polars`. Si vous désirez obtenir à nouveau un objet `Polars`, 
+il faudra utiliser la méthode `pl`, comme montré dans le prochain exemple
+
+```{=html}
+</div>
+```
+:::
+
+
+La seconde approche implique quant à elle d'utiliser `DuckDB` pour lire et
+traiter les données avant de transformer cela en objet `Polars` pour éventuellement
+des manipulations de données ultérieures. Cette approche fonctionne en deux temps:
+
+- `DuckDB` sert à lire les données (ici au format `parquet`) et effectuer le filtre
+- Le résultat de cette requête est transformé en `DataFrame` `Polars` avec
+la méthode `pl`:
+
+```{python}
+duckdb.sql('SELECT * FROM read_parquet("bpe.parquet") WHERE DEP in (75, 92)').pl()
+```
+
+Cette approche est intéressante pour effectuer les opérations de sélection
+d'observations ou de variables le plus tôt possible afin de ne pas avoir en mémoire
+des données inutilisées.
